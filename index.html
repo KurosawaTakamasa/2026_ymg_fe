@@ -122,6 +122,8 @@
   table.t td.r{text-align:right;white-space:nowrap}
   table.grid{border-collapse:collapse;margin:.2em 0 .8em 1.8em}
   table.grid td{padding:.1em 2.2em .1em 0;white-space:nowrap}
+  .fig{margin:.6em 0 .2em 1.8em}
+  .fig svg{max-width:100%;height:auto}
   .figbox{border:1px solid #333;padding:.5em .9em;margin:.6em 0 .2em 1.8em;line-height:1.75;font-size:.95em}
   .figbox .it{padding-left:1em;text-indent:-1em}
   .figbox .it2{padding-left:2em;text-indent:-1em}
@@ -142,6 +144,7 @@
   .expl li{margin-bottom:.2em}
   .expl table.t{margin-left:0;font-size:14px}
   .expl pre.code{margin-left:.5em}
+  .expl .cap{text-align:left !important;margin:.6em 0 .2em !important;font-size:14px;color:var(--sub)}
   .wrongs{border-collapse:collapse;font-size:14px;margin:.3em 0 .6em}
   .wrongs td{border:1px solid var(--line);padding:.3em .7em;vertical-align:top;line-height:1.7}
   .wrongs td:first-child{white-space:nowrap;text-align:center;font-weight:bold;background:#f6f7f9}
@@ -340,15 +343,26 @@ const GROUPS = [
 ];
 const $ = id => document.getElementById(id);
 
+const SCRIPT_ERRS = {};   // ファイル名 → 書き方の誤りがあった行
+window.addEventListener('error', e=>{
+  if(e.filename && e.filename.includes('/data/')) SCRIPT_ERRS[e.filename.split('/').pop()] = e.lineno;
+});
 function loadAll(files, done){
   const errs=[]; let i=0;
   (function next(){
     if(i>=files.length){ done(errs); return; }
     const f = files[i++];
+    const before = CBT.sets.length;
     const s = document.createElement('script');
     s.src = 'data/' + f;
-    s.onload = next;
-    s.onerror = ()=>{ errs.push(f); next(); };
+    s.onload = ()=>{
+      if(CBT.sets.length === before){
+        const ln = SCRIPT_ERRS[f];
+        errs.push(f + '：書き方に誤りがあります' + (ln ? `（${ln}行目付近）` : '（コンマ・括弧・引用符の抜けなどを確認してください）'));
+      }
+      next();
+    };
+    s.onerror = ()=>{ errs.push(f + '：ファイルが見つかりません（ファイル名と sets.js の記述を確認してください）'); next(); };
     document.body.appendChild(s);
   })();
 }
@@ -379,6 +393,7 @@ function blockHtml(b, qno){
     case 'label': return `<div class="label">${inl(b.text)}</div>`;
     case 'code': return `<pre class="code">${inl(b.text)}</pre>`;
     case 'cap': return `<p class="cap">${inl(b.text)}</p>`;
+    case 'svg': return `<div class="fig">${b.svg}</div>` + (b.caption?`<p class="cap">${inl(b.caption)}</p>`:'');
     case 'note': return `<p class="note">${inl(b.text)}</p>`;
     case 'table': return (b.caption?`<p class="cap">${inl(b.caption)}</p>`:'') + tableHtml(b);
     case 'box':
@@ -722,19 +737,13 @@ const FILES = window.SET_FILES || [];
 loadAll(FILES, errs=>{
   if(errs.length){
     $('loadErr').classList.remove('hidden');
-    $('loadErr').innerHTML = '次の問題ファイルを読み込めませんでした。ファイル名と中身の書き方を確認してください：<br>' + errs.map(esc).join('<br>');
+    $('loadErr').innerHTML = '次の問題ファイルを読み込めませんでした：<br>' + errs.map(esc).join('<br>');
   }
   if(!FILES.length){
     $('loadErr').classList.remove('hidden');
     $('loadErr').textContent = 'data/sets.js が見つからないか，問題ファイルが登録されていません。index.html と data フォルダを同じ場所に置いてください。';
   }
   renderSelect();
-});
-window.addEventListener('error', e=>{
-  if(e.filename && e.filename.includes('/data/')){
-    $('loadErr').classList.remove('hidden');
-    $('loadErr').innerHTML += (($('loadErr').innerHTML)?'<br>':'') + '問題ファイルの書き方に誤りがあります：' + esc(e.filename.split('/').pop()) + '（' + e.lineno + '行目付近）';
-  }
 });
 </script>
 </body>

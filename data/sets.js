@@ -11,4 +11,8 @@ window.SET_FILES = [
   'mini-04.js',
   'mini-05.js',
   'full-01.js',
+  'full-02.js',
+  'full-03.js',
+  'full-04.js',
+  'full-05.js',
 ];
