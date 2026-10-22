@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>科目B CBT演習</title>
+<style>
+  :root{
+    --navy:#1f3a68; --navy2:#2c4f8a; --line:#c9d1dc; --bg:#eef1f5; --paper:#fff;
+    --ink:#1a1a1a; --sub:#5b6470; --accent:#e8833a; --ok:#1e8a4c; --ng:#c8312b;
+    --sel:#2c6bd6; --mark:#fff176;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:"Yu Gothic UI","Yu Gothic","Meiryo","Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:var(--bg);font-size:15px}
+  button{font-family:inherit;font-size:inherit;cursor:pointer}
+  .hidden{display:none !important}
+
+  .page{min-height:100%;padding:32px 16px 48px}
+  .wrap{max-width:980px;margin:0 auto}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:28px 32px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  h1{font-size:22px;margin:0 0 4px}
+  .subtitle{color:var(--sub);margin:0 0 20px}
+  .btn{border:1px solid var(--navy);background:#fff;color:var(--navy);padding:8px 18px;border-radius:4px}
+  .btn:hover{background:#f0f4fa}
+  .btn.primary{background:var(--navy);color:#fff}
+  .btn.primary:hover{background:var(--navy2)}
+  .btn.big{padding:12px 36px;font-size:17px}
+  .btn:disabled{opacity:.4;cursor:default}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  select{font-size:15px;padding:4px 8px;font-family:inherit}
+
+  /* ---------- 問題選択 ---------- */
+  .group{margin-top:26px}
+  .group h2{font-size:17px;margin:0 0 4px;padding-left:10px;border-left:5px solid var(--navy)}
+  .group .gdesc{color:var(--sub);font-size:13px;margin:0 0 12px 15px}
+  .sets{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .setcard{background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+  .setcard .st{font-weight:bold;font-size:16px}
+  .setcard .meta{font-size:13px;color:var(--sub);line-height:1.6}
+  .setcard .last{font-size:12px;color:var(--navy);min-height:1.2em}
+  .setcard .btn{margin-top:6px;align-self:flex-start}
+  .loaderr{background:#fdebea;color:var(--ng);border:1px solid #f2c3bf;border-radius:4px;padding:10px 14px;margin-top:16px;font-size:14px}
+
+  /* ---------- 開始前 ---------- */
+  .infotable{border-collapse:collapse;margin:0 0 20px}
+  .infotable th{background:var(--navy);color:#fff;font-weight:normal;padding:8px 18px;border:1px solid var(--navy);text-align:left}
+  .infotable td{padding:8px 24px;border:1px solid var(--line)}
+  .notes{margin:0 0 22px;padding-left:1.4em;line-height:1.9}
+
+  /* ---------- 試験 ---------- */
+  #exam{height:100%;display:flex;flex-direction:column}
+  header.top{background:var(--navy);color:#fff;display:flex;align-items:center;gap:14px;padding:0 16px;height:52px;flex:none}
+  header.top .title{font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header.top .spacer{flex:1}
+  .timer{background:#fff;color:var(--navy);border-radius:4px;padding:4px 12px;font-weight:bold;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .timer.warn{background:#ffe9e7;color:var(--ng)}
+  .fsz{display:flex;align-items:center;gap:4px;white-space:nowrap}
+  .fsz button{background:transparent;border:1px solid rgba(255,255,255,.6);color:#fff;border-radius:3px;padding:2px 9px}
+  .fsz button.on{background:#fff;color:var(--navy)}
+  header .btn{white-space:nowrap}
+  header .btn.finish{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:bold}
+  header .btn.light{border-color:#fff;color:#fff;background:transparent}
+  header .btn.light:hover{background:rgba(255,255,255,.1)}
+
+  .main{flex:1;display:flex;min-height:0}
+  aside.list{width:190px;flex:none;background:#f8f9fb;border-right:1px solid var(--line);overflow:auto;padding:12px 10px}
+  aside.list h2{font-size:13px;color:var(--sub);margin:4px 4px 10px;font-weight:normal}
+  .qitem{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:4px;padding:7px 10px;margin-bottom:5px;position:relative}
+  .qitem .no{font-weight:bold;min-width:3em}
+  .qitem .st{font-size:12px;color:var(--sub)}
+  .qitem.done .st{color:var(--navy)}
+  .qitem.cur{border-color:var(--navy);box-shadow:inset 4px 0 0 var(--navy)}
+  .qitem .tag{position:absolute;right:-1px;top:-1px;width:0;height:0;border-top:16px solid var(--accent);border-left:16px solid transparent;border-top-right-radius:4px}
+  .qitem .res{margin-left:auto;font-weight:bold}
+  .res.ok,.okmark{color:var(--ok)} .res.ng,.ngmark{color:var(--ng)}
+  .legend{font-size:12px;color:var(--sub);margin:14px 4px 0;line-height:1.8}
+  .legend .sw{display:inline-block;width:0;height:0;border-top:10px solid var(--accent);border-left:10px solid transparent;margin-right:6px;vertical-align:middle}
+
+  section.qpane{flex:1;display:flex;flex-direction:column;min-width:0}
+  .qtools{display:flex;align-items:center;gap:8px;padding:8px 14px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .qtools .pos{font-weight:bold;margin-right:8px}
+  .tool{border:1px solid var(--line);background:#fff;border-radius:4px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px}
+  .tool:hover{background:#f4f6f9}
+  .tool.on{border-color:var(--navy);background:#e6edf8;color:var(--navy);font-weight:bold}
+  .tool.flagon{border-color:var(--accent);background:#fdf0e6;color:#a8531a;font-weight:bold}
+  .tool .swatch{display:inline-block;width:14px;height:10px;background:var(--mark);border:1px solid #d4c34a}
+  .tool .flagicon{display:inline-block;width:0;height:0;border-top:10px solid var(--accent);border-left:10px solid transparent}
+  .qtools .hint{font-size:12px;color:var(--sub);margin-left:auto}
+  .qscroll{flex:1;overflow:auto;padding:22px 30px 40px;background:var(--paper)}
+  .qscroll.m-erase mark.hl{cursor:pointer;outline:1px dashed #b49b00}
+
+  aside.ans{width:250px;flex:none;border-left:1px solid var(--line);background:#f8f9fb;display:flex;flex-direction:column}
+  aside.ans h2{font-size:14px;margin:0;padding:12px 14px;border-bottom:1px solid var(--line);background:#fff}
+  .choices-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:14px}
+  .cbtn{border:1px solid #9aa6b5;background:#fff;border-radius:4px;padding:10px 0;font-size:18px}
+  .cbtn:hover{background:#eef3fb}
+  .cbtn.sel{background:var(--sel);border-color:var(--sel);color:#fff;font-weight:bold}
+  .cbtn.correct{background:#e3f4ea;border-color:var(--ok);color:var(--ok);font-weight:bold}
+  .cbtn.wrong{background:#fdebea;border-color:var(--ng);color:var(--ng);font-weight:bold}
+  .cbtn:disabled{cursor:default}
+  .ansinfo{padding:0 14px 14px;font-size:13px;color:var(--sub);line-height:1.7}
+  .ansinfo strong{color:var(--ink);font-size:15px}
+  .ans .clear{margin:0 14px 14px}
+  .ans .bottom{margin-top:auto;padding:14px;display:flex;gap:8px;border-top:1px solid var(--line);background:#fff}
+  .ans .bottom .btn{flex:1;padding:8px 0}
+
+  /* ---------- 問題文 ---------- */
+  .qcontent{max-width:880px;line-height:1.95}
+  .fs-s{font-size:14px} .fs-m{font-size:16px} .fs-l{font-size:19px}
+  .qcontent p{margin:0 0 .6em;text-indent:1em}
+  .qcontent p.lead{text-indent:0;padding-left:3em;text-indent:-3em;margin-bottom:1.2em}
+  .qno{font-weight:bold;display:inline-block;width:3em;text-indent:0}
+  .qcontent .label{margin:1.1em 0 .3em .5em}
+  pre.code{font-family:"BIZ UDGothic","MS Gothic","Osaka-Mono","Noto Sans Mono CJK JP",monospace;font-size:.95em;line-height:1.75;margin:0 0 .6em 1.8em;white-space:pre;overflow-x:auto}
+  .blank{display:inline-block;min-width:4.2em;border:1.5px solid #000;text-align:center;line-height:1.35;padding:0 .4em;text-indent:0;vertical-align:baseline;font-family:inherit}
+  .blank:empty::after{content:"\00a0"}
+  table.t{border-collapse:collapse;margin:.4em 0 .8em 1.8em}
+  table.t th,table.t td{border:1px solid #333;padding:.2em .8em;line-height:1.6;text-align:left;vertical-align:middle}
+  table.t th{background:#f0f0f0;font-weight:normal;text-align:center;white-space:nowrap}
+  table.t td.c{text-align:center;white-space:nowrap}
+  table.t td.r{text-align:right;white-space:nowrap}
+  table.grid{border-collapse:collapse;margin:.2em 0 .8em 1.8em}
+  table.grid td{padding:.1em 2.2em .1em 0;white-space:nowrap}
+  .figbox{border:1px solid #333;padding:.5em .9em;margin:.6em 0 .2em 1.8em;line-height:1.75;font-size:.95em}
+  .figbox .it{padding-left:1em;text-indent:-1em}
+  .figbox .it2{padding-left:2em;text-indent:-1em}
+  .cap{text-align:center !important;margin:.3em 0 1em !important;text-indent:0 !important}
+  .note{font-size:.88em;margin:-.6em 0 .8em 1.8em !important;text-indent:0 !important}
+  p.setsumon{margin-top:1.2em;padding-left:3em;text-indent:-3em !important}
+  .setsumon b{display:inline-block;width:3em;text-indent:0}
+  mark.hl{background:var(--mark);color:inherit;padding:0}
+
+  /* ---------- 解説 ---------- */
+  .expl{max-width:880px;line-height:1.85}
+  .qwrap .expl{margin-top:28px;border-top:3px solid var(--navy);padding-top:14px}
+  .expl h3{margin:0 0 6px;color:var(--navy);font-size:17px}
+  .expl h4{margin:16px 0 4px;font-size:15px;color:var(--navy)}
+  .expl h4::before{content:"■ "}
+  .expl p{margin:0 0 .5em}
+  .expl ul{margin:0 0 .5em;padding-left:1.4em}
+  .expl li{margin-bottom:.2em}
+  .expl table.t{margin-left:0;font-size:14px}
+  .expl pre.code{margin-left:.5em}
+  .wrongs{border-collapse:collapse;font-size:14px;margin:.3em 0 .6em}
+  .wrongs td{border:1px solid var(--line);padding:.3em .7em;vertical-align:top;line-height:1.7}
+  .wrongs td:first-child{white-space:nowrap;text-align:center;font-weight:bold;background:#f6f7f9}
+  .wrongs tr.right td{background:#eef8f2}
+  .wrongs tr.right td:first-child{color:var(--ok)}
+  .verdict{display:inline-block;font-weight:bold;padding:2px 10px;border-radius:3px;margin-left:8px;font-size:14px}
+  .verdict.ok{background:#e3f4ea;color:var(--ok)} .verdict.ng{background:#fdebea;color:var(--ng)}
+
+  /* ---------- 結果 ---------- */
+  .score{font-size:40px;font-weight:bold;color:var(--navy);margin:4px 0 2px}
+  .score small{font-size:18px;color:var(--sub);font-weight:normal}
+  .breakdown{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 0}
+  .breakdown span{background:#f0f3f8;border-radius:4px;padding:4px 12px;font-size:14px}
+  table.res{border-collapse:collapse;width:100%;margin:18px 0 20px;font-size:14px}
+  table.res th,table.res td{border:1px solid var(--line);padding:7px 10px;text-align:center}
+  table.res th{background:#f0f3f8;font-weight:normal}
+  table.res td.l{text-align:left}
+  .link{color:var(--navy);text-decoration:underline;background:none;border:none;padding:0}
+  .ex-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:34px 0 4px}
+  .ex-head h2{margin:0;font-size:19px}
+  .seg{display:inline-flex;border:1px solid var(--navy);border-radius:4px;overflow:hidden}
+  .seg button{border:none;background:#fff;color:var(--navy);padding:6px 14px}
+  .seg button.on{background:var(--navy);color:#fff}
+  .exitem{background:#fff;border:1px solid var(--line);border-radius:6px;margin-top:14px}
+  .exitem > .eh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line);background:#f8f9fb;border-radius:6px 6px 0 0}
+  .exitem .eh .n{font-weight:bold;font-size:16px}
+  .exitem .eh .m{color:var(--sub);font-size:13px}
+  .exitem .eh .ya{margin-left:auto;font-size:14px}
+  .exitem .eb{padding:6px 22px 16px}
+
+  /* ---------- モーダル ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(10,20,40,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal{background:#fff;border-radius:6px;max-width:460px;width:100%;padding:24px 26px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  .modal h3{margin:0 0 12px;font-size:18px}
+  .modal p{margin:0 0 8px;line-height:1.7}
+  .modal .acts{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+
+  @media (max-width:900px){
+    .main{flex-direction:column}
+    aside.list{width:auto;border-right:none;border-bottom:1px solid var(--line);overflow-x:auto;padding:8px}
+    #qlist{display:flex;gap:6px}
+    aside.list h2,.legend{display:none}
+    .qitem{width:auto;margin:0;flex:none}
+    aside.ans{width:auto;border-left:none;border-top:1px solid var(--line)}
+    .choices-btns{grid-template-columns:repeat(5,1fr)}
+    .qscroll{padding:16px}
+    header.top{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}
+    header.top .spacer{display:none}
+    .card{padding:20px 18px}
+  }
+  @media print{
+    #selectPage,#exam,.ex-head .seg,.noprint{display:none !important}
+    .page{padding:0} .card{box-shadow:none;border:none}
+    .exitem{break-inside:avoid-page}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== 問題選択 ===================== -->
+<div id="selectPage" class="page">
+  <div class="wrap">
+    <div class="card">
+      <h1>基本情報技術者試験　科目B　CBT演習</h1>
+      <p class="subtitle">解きたい問題セットを選んで「開始」を押してください。</p>
+      <div id="groups"></div>
+      <div id="loadErr" class="loaderr hidden"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 開始前 ===================== -->
+<div id="introPage" class="page hidden">
+  <div class="wrap" style="max-width:780px">
+    <div class="card">
+      <h1 id="introTitle"></h1>
+      <p class="subtitle" id="introSub"></p>
+      <table class="infotable">
+        <tr><th>問題数</th><td id="introCount"></td></tr>
+        <tr><th>出題分野</th><td id="introFields"></td></tr>
+        <tr><th>解答方法</th><td>解答群から一つ選択</td></tr>
+      </table>
+      <ol class="notes">
+        <li>画面右の「解答」欄で選択肢をクリックすると解答できます。選び直すこともできます。</li>
+        <li>後で見直したい問題には「付箋」を付けられます。左の問題一覧で付箋の付いた問題が分かります。</li>
+        <li>「マーカー」をオンにして問題文をドラッグすると，黄色の線を引けます。「消しゴム」をオンにしてマーカーをクリックすると消えます。</li>
+        <li>時間になると自動的に解答終了となり，採点結果が表示されます。</li>
+        <li>採点後は，全問の正解と詳細な解説を確認できます。</li>
+      </ol>
+      <div class="row" style="margin-bottom:22px">
+        <label for="timeSel">試験時間：</label>
+        <select id="timeSel"></select>
+      </div>
+      <div class="row">
+        <button class="btn primary big" id="startBtn">試験開始</button>
+        <button class="btn" id="introBack">問題選択に戻る</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 試験 ===================== -->
+<div id="exam" class="hidden">
+  <header class="top">
+    <span class="title" id="hdrTitle"></span>
+    <span class="spacer"></span>
+    <span class="fsz">文字
+      <button data-fs="s">小</button><button data-fs="m" class="on">中</button><button data-fs="l">大</button>
+    </span>
+    <span class="timer" id="timer"></span>
+    <button class="btn light" id="quitBtn">中断</button>
+    <button class="btn finish" id="finishBtn">解答終了</button>
+    <button class="btn light hidden" id="backResultBtn">採点結果に戻る</button>
+  </header>
+  <div class="main">
+    <aside class="list">
+      <h2>問題一覧</h2>
+      <div id="qlist"></div>
+      <div class="legend" id="legend">
+        <div><span class="sw"></span>付箋あり</div>
+        <div>「解答済」は解答が選択されている問題です。</div>
+      </div>
+    </aside>
+    <section class="qpane">
+      <div class="qtools">
+        <span class="pos" id="pos"></span>
+        <button class="tool" id="flagBtn"><span class="flagicon"></span><span>付箋</span></button>
+        <button class="tool" id="markBtn"><span class="swatch"></span>マーカー</button>
+        <button class="tool" id="eraseBtn">消しゴム</button>
+        <button class="tool" id="clearMarksBtn">この問題のマーカーを全て消す</button>
+        <span class="hint" id="modeHint"></span>
+      </div>
+      <div class="qscroll" id="qscroll"></div>
+    </section>
+    <aside class="ans">
+      <h2 id="ansTitle">解答</h2>
+      <div class="choices-btns" id="choiceBtns"></div>
+      <div class="ansinfo" id="ansInfo"></div>
+      <button class="btn clear" id="clearAnsBtn">解答を取り消す</button>
+      <div class="bottom">
+        <button class="btn" id="prevBtn">◀ 前の問題</button>
+        <button class="btn" id="nextBtn">次の問題 ▶</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ===================== 採点結果＋詳細解説 ===================== -->
+<div id="resultPage" class="page hidden">
+  <div class="wrap">
+    <div class="card">
+      <h1>採点結果</h1>
+      <p class="subtitle" id="resSub"></p>
+      <div class="score" id="score"></div>
+      <div class="breakdown" id="breakdown"></div>
+      <table class="res" id="resTable"></table>
+      <div class="row noprint">
+        <button class="btn primary" id="retryBtn">もう一度解く</button>
+        <button class="btn" id="toSelectBtn">問題選択に戻る</button>
+        <button class="btn" id="printBtn">解説を印刷</button>
+      </div>
+    </div>
+    <div class="ex-head">
+      <h2>詳細解説</h2>
+      <span class="seg"><button data-f="all" class="on">全ての問題</button><button data-f="ng">不正解の問題だけ</button></span>
+    </div>
+    <div id="exList"></div>
+  </div>
+</div>
+
+<!-- ===================== モーダル ===================== -->
+<div class="overlay hidden" id="overlay">
+  <div class="modal">
+    <h3 id="mTitle"></h3>
+    <div id="mBody"></div>
+    <div class="acts" id="mActs"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   問題データの読み込み
+   data/sets.js に書かれたファイルを順に読み込みます。
+   各ファイルは CBT.addSet({...}) を呼び出して問題セットを登録します。
+   ===================================================================== */
+const CBT = { sets: [], addSet(s){ this.sets.push(s); } };
+window.CBT = CBT;
+</script>
+<script src="data/sets.js"></script>
+<script>
+const LETTERS = ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ'];
+const GROUPS = [
+  {id:'sample', title:'お試しセット', desc:'CBT形式の画面操作に慣れるためのセットです。'},
+  {id:'mini',   title:'5問ミニテスト', desc:'アルゴリズム4問・情報セキュリティ1問。授業の小テスト向けです（目安25分）。'},
+  {id:'full',   title:'本番形式（20問）', desc:'本試験と同じ構成です。問1～16がアルゴリズムとプログラミング，問17～20が情報セキュリティです（100分）。'},
+];
+const $ = id => document.getElementById(id);
+
+function loadAll(files, done){
+  const errs=[]; let i=0;
+  (function next(){
+    if(i>=files.length){ done(errs); return; }
+    const f = files[i++];
+    const s = document.createElement('script');
+    s.src = 'data/' + f;
+    s.onload = next;
+    s.onerror = ()=>{ errs.push(f); next(); };
+    document.body.appendChild(s);
+  })();
+}
+
+/* =====================================================================
+   描画ヘルパー（問題データ → HTML）
+   文中の {{a}} は空欄（a と書かれた枠），{{}} は文字なしの空欄，**語** は太字です。
+   ===================================================================== */
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function inl(s){
+  return esc(s)
+    .replace(/\{\{([^{}\s,]{0,4})\}\}/g, (m,l)=>`<span class="blank">${l}</span>`)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+}
+function tableHtml(b){
+  const cc = b.center || [];
+  let h = `<table class="t">`;
+  if(b.head) h += '<tr>' + b.head.map(x=>`<th>${inl(x)}</th>`).join('') + '</tr>';
+  b.rows.forEach(r=>{
+    h += '<tr>' + r.map((x,ci)=>`<td${cc.includes(ci)?' class="c"':''}>${inl(x)}</td>`).join('') + '</tr>';
+  });
+  return h + '</table>';
+}
+function blockHtml(b, qno){
+  switch(b.t){
+    case 'lead': return `<p class="lead"><span class="qno">問${qno}</span>${inl(b.text)}</p>`;
+    case 'p': return `<p>${inl(b.text)}</p>`;
+    case 'label': return `<div class="label">${inl(b.text)}</div>`;
+    case 'code': return `<pre class="code">${inl(b.text)}</pre>`;
+    case 'cap': return `<p class="cap">${inl(b.text)}</p>`;
+    case 'note': return `<p class="note">${inl(b.text)}</p>`;
+    case 'table': return (b.caption?`<p class="cap">${inl(b.caption)}</p>`:'') + tableHtml(b);
+    case 'box':
+      return `<div class="figbox">` + b.lines.map(l=>{
+        const cls = l.startsWith('　・') ? 'it2' : l.startsWith('・') ? 'it' : '';
+        return `<div class="${cls}">${inl(l)}</div>`;
+      }).join('') + `</div>` + (b.caption?`<p class="cap">${inl(b.caption)}</p>`:'');
+    case 'choices': {
+      const head = ['', ...b.head];
+      const rows = b.rows.map((r,i)=>[LETTERS[i], ...r]);
+      return `<div class="label">解答群</div>` + tableHtml({head, rows, center:[0, ...(b.center||[]).map(c=>c+1)]});
+    }
+    case 'grid': {
+      const items = b.items.map((x,i)=>`${LETTERS[i]}　${x}`);
+      const cols = b.cols || 4; let h = `<div class="label">解答群</div><table class="grid">`;
+      for(let i=0;i<items.length;i+=cols){
+        h += '<tr>' + items.slice(i,i+cols).map(x=>`<td>${inl(x)}</td>`).join('') + '</tr>';
+      }
+      return h + '</table>';
+    }
+    case 'list': {
+      return `<div class="label">解答群</div>` + b.items.map((x,i)=>
+        `<p style="text-indent:0;padding-left:3.6em;text-indent:-1.8em;margin:0 0 .3em">${LETTERS[i]}　${inl(x)}</p>`).join('');
+    }
+    case 'setsumon': return `<p class="setsumon"><b>設問</b>${inl(b.text)}</p>`;
+    case 'h': return `<h4>${inl(b.text)}</h4>`;
+    case 'ul': return '<ul>' + b.items.map(x=>`<li>${inl(x)}</li>`).join('') + '</ul>';
+    default: return '';
+  }
+}
+function optionCount(q){
+  if(q.options) return q.options;
+  const c = q.blocks.find(b=>['choices','grid','list'].includes(b.t));
+  return c ? (c.rows||c.items).length : 4;
+}
+function explHtml(q){
+  let h = `<p>正解：<b>${q.answer}</b></p>`;
+  if(q.aim) h += `<h4>出題のねらい</h4><p>${inl(q.aim)}</p>`;
+  h += (q.expl||[]).map(b=>blockHtml(b)).join('');
+  if(q.choiceNotes && q.choiceNotes.length){
+    h += `<h4>選択肢ごとの解説</h4><table class="wrongs">` + q.choiceNotes.map(([l,t])=>
+      `<tr class="${l===q.answer?'right':''}"><td>${l}${l===q.answer?'（正解）':''}</td><td>${inl(t)}</td></tr>`).join('') + `</table>`;
+  }
+  return h;
+}
+
+/* =====================================================================
+   状態
+   ===================================================================== */
+const S = { set:null, Q:[], cur:0, ans:[], flag:[], mode:'none', remain:0, limit:0, timerId:null,
+            review:false, finished:false, fs:'m', divs:[], filter:'all', startedAt:0 };
+const qscroll = $('qscroll');
+
+function show(id){
+  ['selectPage','introPage','exam','resultPage'].forEach(x=>$(x).classList.toggle('hidden', x!==id));
+  window.scrollTo(0,0);
+}
+function storeGet(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+function storeSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+/* ---------- 問題選択画面 ---------- */
+function fieldSummary(set){
+  const m = {};
+  set.questions.forEach(q=>{ m[q.field]=(m[q.field]||0)+1; });
+  return Object.entries(m).map(([k,v])=>`${k} ${v}問`).join('・');
+}
+function renderSelect(){
+  const box = $('groups'); box.innerHTML='';
+  const known = GROUPS.map(g=>g.id);
+  const groups = [...GROUPS, {id:'_other', title:'追加した問題', desc:'data フォルダに追加した問題セットです。'}];
+  groups.forEach(g=>{
+    const sets = CBT.sets.filter(s => g.id==='_other' ? !known.includes(s.group) : s.group===g.id);
+    if(!sets.length) return;
+    const sec = document.createElement('div'); sec.className='group';
+    sec.innerHTML = `<h2>${esc(g.title)}</h2><p class="gdesc">${esc(g.desc)}</p><div class="sets"></div>`;
+    const grid = sec.querySelector('.sets');
+    sets.forEach(s=>{
+      const last = storeGet('cbt-last-'+s.id);
+      const c = document.createElement('div'); c.className='setcard';
+      c.innerHTML = `<div class="st">${esc(s.title)}</div>
+        <div class="meta">${s.questions.length}問　${s.minutes?s.minutes+'分':'時間制限なし'}<br>${esc(fieldSummary(s))}${s.note?'<br>'+esc(s.note):''}</div>
+        <div class="last">${last?`前回の結果：${last.correct} / ${last.total} 問正解（${last.date}）`:''}</div>
+        <button class="btn primary">開始</button>`;
+      c.querySelector('button').onclick = ()=>openIntro(s);
+      grid.appendChild(c);
+    });
+    box.appendChild(sec);
+  });
+}
+
+/* ---------- 開始前画面 ---------- */
+function openIntro(set){
+  S.set = set;
+  $('introTitle').textContent = set.title;
+  $('introSub').textContent = '基本情報技術者試験　科目B（演習）';
+  $('introCount').textContent = `${set.questions.length}問（全問必須）`;
+  $('introFields').textContent = fieldSummary(set);
+  const sel = $('timeSel'); sel.innerHTML='';
+  const opts = [...new Set([set.minutes||0, 15, 25, 30, 50, 100, 0])].filter(x=>x!==undefined);
+  opts.sort((a,b)=>(a||9999)-(b||9999));
+  opts.forEach(m=>{
+    const o=document.createElement('option'); o.value=m;
+    o.textContent = m ? `${m}分` : '制限なし';
+    if(m===(set.minutes||0)) { o.selected=true; o.textContent += '（標準）'; }
+    sel.appendChild(o);
+  });
+  show('introPage');
+}
+
+/* ---------- 試験開始 ---------- */
+function buildQuestions(){
+  qscroll.innerHTML = '';
+  S.divs = S.Q.map((q,i)=>{
+    const wrap = document.createElement('div'); wrap.className='qwrap hidden';
+    const c = document.createElement('div'); c.className='qcontent fs-'+S.fs;
+    c.innerHTML = q.blocks.map(b=>blockHtml(b, i+1)).join('');
+    const e = document.createElement('div'); e.className='expl hidden';
+    wrap.append(c, e); qscroll.appendChild(wrap);
+    return {wrap, content:c, expl:e};
+  });
+}
+function startExam(){
+  const set = S.set;
+  S.Q = set.questions; const N = S.Q.length;
+  S.limit = parseInt($('timeSel').value,10)*60; S.remain = S.limit;
+  S.cur=0; S.ans=Array(N).fill(null); S.flag=Array(N).fill(false);
+  S.review=false; S.finished=false; S.startedAt=Date.now();
+  buildQuestions();
+  if(S.mode!=='none') setMode(S.mode);
+  $('hdrTitle').textContent = '科目B演習　' + set.title;
+  $('timer').classList.remove('warn','hidden');
+  $('timer').textContent = S.limit ? '残り時間 '+fmt(S.limit) : '経過時間 00:00';
+  ['finishBtn','quitBtn'].forEach(x=>$(x).classList.remove('hidden'));
+  $('backResultBtn').classList.add('hidden');
+  $('legend').classList.remove('hidden');
+  show('exam');
+  clearInterval(S.timerId); S.timerId = setInterval(tick,1000);
+  go(0);
+}
+
+/* ---------- 試験画面の描画 ---------- */
+function renderList(){
+  const box = $('qlist'); box.innerHTML='';
+  S.Q.forEach((q,i)=>{
+    const b = document.createElement('button');
+    b.className = 'qitem' + (i===S.cur?' cur':'') + (S.ans[i]?' done':'');
+    let res = '';
+    if(S.review){ const ok = S.ans[i]===q.answer; res = `<span class="res ${ok?'ok':'ng'}">${ok?'○':'×'}</span>`; }
+    b.innerHTML = `<span class="no">問${i+1}</span><span class="st">${S.ans[i]?'解答済　'+S.ans[i]:'未解答'}</span>${res}${S.flag[i]?'<span class="tag"></span>':''}`;
+    b.onclick = ()=>go(i);
+    box.appendChild(b);
+  });
+  const cur = box.children[S.cur]; if(cur) cur.scrollIntoView({block:'nearest'});
+}
+function renderQuestion(){
+  const N = S.Q.length, q = S.Q[S.cur];
+  S.divs.forEach((d,i)=>d.wrap.classList.toggle('hidden', i!==S.cur));
+  $('pos').textContent = `問${S.cur+1} / ${N}　${q.field}`;
+  $('flagBtn').classList.toggle('flagon', S.flag[S.cur]);
+  $('flagBtn').lastChild.textContent = S.flag[S.cur] ? '付箋を外す' : '付箋';
+  $('prevBtn').disabled = S.cur===0;
+  $('nextBtn').disabled = S.cur===N-1;
+  const box = $('choiceBtns'); box.innerHTML='';
+  LETTERS.slice(0, optionCount(q)).forEach(c=>{
+    const b = document.createElement('button'); b.className='cbtn'; b.textContent=c;
+    if(S.review){
+      b.disabled = true;
+      if(c===q.answer) b.classList.add('correct'); else if(c===S.ans[S.cur]) b.classList.add('wrong');
+    }else{
+      if(S.ans[S.cur]===c) b.classList.add('sel');
+      b.onclick = ()=>{ S.ans[S.cur]=c; renderQuestion(); renderList(); };
+    }
+    box.appendChild(b);
+  });
+  if(S.review){
+    const ok = S.ans[S.cur]===q.answer;
+    $('ansTitle').textContent = '解答結果';
+    $('ansInfo').innerHTML = `あなたの解答：<strong>${S.ans[S.cur]||'未解答'}</strong><br>正解：<strong>${q.answer}</strong><span class="verdict ${ok?'ok':'ng'}">${ok?'正解':'不正解'}</span>`;
+    $('clearAnsBtn').classList.add('hidden');
+    const d = S.divs[S.cur];
+    d.expl.innerHTML = `<h3>問${S.cur+1}　解説　<span style="font-weight:normal;font-size:14px;color:#5b6470">${esc(q.field)}／${esc(q.level)}／${esc(q.theme||'')}</span></h3>` + explHtml(q);
+    d.expl.classList.remove('hidden');
+  }else{
+    $('ansTitle').textContent = '解答';
+    $('ansInfo').innerHTML = S.ans[S.cur] ? `選択中の解答：<strong>${S.ans[S.cur]}</strong>` : 'まだ解答していません。';
+    $('clearAnsBtn').classList.remove('hidden');
+    $('clearAnsBtn').disabled = !S.ans[S.cur];
+  }
+}
+function go(i){
+  if(i<0||i>=S.Q.length) return;
+  S.cur=i; qscroll.scrollTop=0; renderQuestion(); renderList();
+}
+
+/* ---------- タイマー ---------- */
+function fmt(sec){ const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60;
+  return (h?h+':':'') + `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+function tick(){
+  if(S.limit===0){ $('timer').textContent='経過時間 '+fmt(++S.remain); return; }
+  S.remain--;
+  $('timer').textContent = '残り時間 '+fmt(Math.max(S.remain,0));
+  $('timer').classList.toggle('warn', S.remain<=300);
+  if(S.remain<=0){
+    finish();
+    modal('時間になりました','<p>試験時間が終了したため，解答を締め切りました。採点結果を表示します。</p>',[{t:'OK',primary:true}]);
+  }
+}
+
+/* ---------- マーカー ---------- */
+function setMode(m){
+  S.mode = (S.mode===m) ? 'none' : m;
+  $('markBtn').classList.toggle('on', S.mode==='marker');
+  $('eraseBtn').classList.toggle('on', S.mode==='erase');
+  qscroll.classList.toggle('m-erase', S.mode==='erase');
+  $('modeHint').textContent = S.mode==='marker' ? '問題文をドラッグしてマーカーを引けます'
+                           : S.mode==='erase' ? '消したいマーカーをクリックしてください' : '';
+}
+function applyMarker(){
+  const sel = window.getSelection();
+  if(!sel.rangeCount || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const d = S.divs[S.cur]; if(!d) return;
+  if(!d.wrap.contains(range.commonAncestorContainer)){ sel.removeAllRanges(); return; }
+  let base = range.commonAncestorContainer; if(base.nodeType===3) base = base.parentNode;
+  const walker = document.createTreeWalker(base, NodeFilter.SHOW_TEXT, { acceptNode(n){
+    if(!range.intersectsNode(n) || !n.nodeValue.trim() || n.parentNode.closest('mark.hl')) return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT; } });
+  const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(n=>{
+    const start = (n===range.startContainer)?range.startOffset:0;
+    const end = (n===range.endContainer)?range.endOffset:n.length;
+    if(start>=end) return;
+    let t = n; if(end<t.length) t.splitText(end); if(start>0) t = t.splitText(start);
+    const m = document.createElement('mark'); m.className='hl'; t.parentNode.insertBefore(m,t); m.appendChild(t);
+  });
+  sel.removeAllRanges();
+}
+function unwrap(m){ const p=m.parentNode; while(m.firstChild) p.insertBefore(m.firstChild,m); p.removeChild(m); p.normalize(); }
+qscroll.addEventListener('mouseup', ()=>{ if(S.mode==='marker') setTimeout(applyMarker,0); });
+qscroll.addEventListener('touchend', ()=>{ if(S.mode==='marker') setTimeout(applyMarker,0); });
+qscroll.addEventListener('click', e=>{ if(S.mode!=='erase') return; const m=e.target.closest('mark.hl'); if(m) unwrap(m); });
+
+/* ---------- モーダル ---------- */
+function modal(title, body, actions){
+  $('mTitle').textContent=title; $('mBody').innerHTML=body;
+  const a=$('mActs'); a.innerHTML='';
+  actions.forEach(x=>{ const b=document.createElement('button'); b.className='btn'+(x.primary?' primary':''); b.textContent=x.t;
+    b.onclick=()=>{ $('overlay').classList.add('hidden'); if(x.fn) x.fn(); }; a.appendChild(b); });
+  $('overlay').classList.remove('hidden');
+}
+
+/* ---------- 終了・採点 ---------- */
+function confirmFinish(){
+  const un = S.ans.map((a,i)=>a?null:`問${i+1}`).filter(Boolean);
+  const fl = S.flag.map((f,i)=>f?`問${i+1}`:null).filter(Boolean);
+  let body = '<p>解答を終了して採点しますか？終了後は解答を変更できません。</p>';
+  if(un.length) body += `<p style="color:#c8312b">未解答の問題（${un.length}問）：${un.join('，')}</p>`;
+  if(fl.length) body += `<p style="color:#a8531a">付箋が付いている問題：${fl.join('，')}</p>`;
+  modal('解答終了の確認', body, [{t:'試験に戻る'},{t:'解答を終了する',primary:true,fn:finish}]);
+}
+function finish(){
+  if(S.finished) return;
+  S.finished = true; clearInterval(S.timerId);
+  const used = Math.round((Date.now()-S.startedAt)/1000);
+  const N = S.Q.length;
+  const correct = S.Q.filter((q,i)=>S.ans[i]===q.answer).length;
+  const d = new Date();
+  storeSet('cbt-last-'+S.set.id, {correct, total:N, date:`${d.getMonth()+1}/${d.getDate()}`});
+  $('resSub').textContent = `${S.set.title}　解答時間 ${fmt(Math.min(used, S.limit||used))}`;
+  $('score').innerHTML = `${correct} <small>/ ${N} 問正解（正答率 ${Math.round(correct/N*100)}%）</small>`;
+  const by = {};
+  S.Q.forEach((q,i)=>{ by[q.field]=by[q.field]||[0,0]; by[q.field][1]++; if(S.ans[i]===q.answer) by[q.field][0]++; });
+  $('breakdown').innerHTML = Object.entries(by).map(([k,[a,b]])=>`<span>${esc(k)}：${a} / ${b}</span>`).join('');
+  let rows = '<tr><th>問</th><th>分野・テーマ</th><th>難易度</th><th>あなたの解答</th><th>正解</th><th>結果</th></tr>';
+  S.Q.forEach((q,i)=>{
+    const ok = S.ans[i]===q.answer;
+    rows += `<tr><td><button class="link" data-jump="${i}">問${i+1}</button></td><td class="l">${esc(q.field)}<br><span style="color:#5b6470;font-size:12px">${esc(q.theme||'')}</span></td><td>${esc(q.level)}</td><td>${S.ans[i]||'未解答'}</td><td>${q.answer}</td><td class="${ok?'okmark':'ngmark'}">${ok?'○':'×'}</td></tr>`;
+  });
+  $('resTable').innerHTML = rows;
+  $('resTable').querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>{
+    const el = document.getElementById('ex'+b.dataset.jump); if(el) el.scrollIntoView({behavior:'smooth'}); });
+  renderExList();
+  show('resultPage');
+}
+function renderExList(){
+  const box = $('exList'); box.innerHTML='';
+  S.Q.forEach((q,i)=>{
+    const ok = S.ans[i]===q.answer;
+    if(S.filter==='ng' && ok) return;
+    const el = document.createElement('div'); el.className='exitem'; el.id='ex'+i;
+    el.innerHTML = `<div class="eh"><span class="n">問${i+1}</span><span class="verdict ${ok?'ok':'ng'}" style="margin-left:0">${ok?'正解':'不正解'}</span>
+      <span class="m">${esc(q.field)}／${esc(q.level)}／${esc(q.theme||'')}</span>
+      <span class="ya">あなたの解答：<b>${S.ans[i]||'未解答'}</b>　正解：<b>${q.answer}</b></span>
+      <button class="btn noprint" style="padding:4px 12px">問題文を見る</button></div>
+      <div class="eb expl">${explHtml(q)}</div>`;
+    el.querySelector('.eh .btn').onclick = ()=>review(i);
+    box.appendChild(el);
+  });
+  if(!box.children.length) box.innerHTML = '<p style="margin-top:16px">不正解の問題はありません。全問正解です。</p>';
+}
+function review(i){
+  S.review = true;
+  if(S.mode!=='none') setMode(S.mode);
+  $('hdrTitle').textContent = '科目B演習　' + S.set.title + '（解説）';
+  $('timer').classList.add('hidden');
+  ['finishBtn','quitBtn'].forEach(x=>$(x).classList.add('hidden'));
+  $('backResultBtn').classList.remove('hidden');
+  $('legend').classList.add('hidden');
+  show('exam'); go(i);
+}
+
+/* ---------- イベント ---------- */
+$('startBtn').onclick = startExam;
+$('introBack').onclick = ()=>{ renderSelect(); show('selectPage'); };
+$('finishBtn').onclick = confirmFinish;
+$('quitBtn').onclick = ()=>modal('試験の中断','<p>試験を中断して問題選択画面に戻りますか？解答した内容は消えます。</p>',
+  [{t:'試験に戻る'},{t:'中断する',primary:true,fn:()=>{ clearInterval(S.timerId); S.finished=true; renderSelect(); show('selectPage'); }}]);
+$('backResultBtn').onclick = ()=>show('resultPage');
+$('retryBtn').onclick = ()=>openIntro(S.set);
+$('toSelectBtn').onclick = ()=>{ renderSelect(); show('selectPage'); };
+$('printBtn').onclick = ()=>window.print();
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
+  S.filter=b.dataset.f; document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b)); renderExList(); });
+$('prevBtn').onclick = ()=>go(S.cur-1);
+$('nextBtn').onclick = ()=>go(S.cur+1);
+$('flagBtn').onclick = ()=>{ S.flag[S.cur]=!S.flag[S.cur]; renderQuestion(); renderList(); };
+$('markBtn').onclick = ()=>setMode('marker');
+$('eraseBtn').onclick = ()=>setMode('erase');
+$('clearMarksBtn').onclick = ()=>S.divs[S.cur].content.querySelectorAll('mark.hl').forEach(unwrap);
+$('clearAnsBtn').onclick = ()=>{ S.ans[S.cur]=null; renderQuestion(); renderList(); };
+document.querySelectorAll('.fsz button').forEach(b=>b.onclick=()=>{
+  S.fs=b.dataset.fs; document.querySelectorAll('.fsz button').forEach(x=>x.classList.toggle('on',x===b));
+  S.divs.forEach(d=>{ d.content.className='qcontent fs-'+S.fs; d.expl.classList.remove('fs-s','fs-m','fs-l'); d.expl.classList.add('fs-'+S.fs); });
+});
+window.addEventListener('beforeunload', e=>{
+  if(!$('exam').classList.contains('hidden') && !S.finished){ e.preventDefault(); e.returnValue=''; }
+});
+
+/* ---------- 起動 ---------- */
+const FILES = window.SET_FILES || [];
+loadAll(FILES, errs=>{
+  if(errs.length){
+    $('loadErr').classList.remove('hidden');
+    $('loadErr').innerHTML = '次の問題ファイルを読み込めませんでした。ファイル名と中身の書き方を確認してください：<br>' + errs.map(esc).join('<br>');
+  }
+  if(!FILES.length){
+    $('loadErr').classList.remove('hidden');
+    $('loadErr').textContent = 'data/sets.js が見つからないか，問題ファイルが登録されていません。index.html と data フォルダを同じ場所に置いてください。';
+  }
+  renderSelect();
+});
+window.addEventListener('error', e=>{
+  if(e.filename && e.filename.includes('/data/')){
+    $('loadErr').classList.remove('hidden');
+    $('loadErr').innerHTML += (($('loadErr').innerHTML)?'<br>':'') + '問題ファイルの書き方に誤りがあります：' + esc(e.filename.split('/').pop()) + '（' + e.lineno + '行目付近）';
+  }
+});
+</script>
+</body>
+</html>
