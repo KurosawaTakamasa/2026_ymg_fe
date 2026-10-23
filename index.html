@@ -8,7 +8,7 @@
   :root{
     --navy:#1f3a68; --navy2:#2c4f8a; --line:#c9d1dc; --bg:#eef1f5; --paper:#fff;
     --ink:#1a1a1a; --sub:#5b6470; --accent:#e8833a; --ok:#1e8a4c; --ng:#c8312b;
-    --sel:#2c6bd6; --mark:#fff176;
+    --sel:#2c6bd6;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
@@ -84,11 +84,8 @@
   .tool:hover{background:#f4f6f9}
   .tool.on{border-color:var(--navy);background:#e6edf8;color:var(--navy);font-weight:bold}
   .tool.flagon{border-color:var(--accent);background:#fdf0e6;color:#a8531a;font-weight:bold}
-  .tool .swatch{display:inline-block;width:14px;height:10px;background:var(--mark);border:1px solid #d4c34a}
   .tool .flagicon{display:inline-block;width:0;height:0;border-top:10px solid var(--accent);border-left:10px solid transparent}
-  .qtools .hint{font-size:12px;color:var(--sub);margin-left:auto}
   .qscroll{flex:1;overflow:auto;padding:22px 30px 40px;background:var(--paper)}
-  .qscroll.m-erase mark.hl{cursor:pointer;outline:1px dashed #b49b00}
 
   aside.ans{width:250px;flex:none;border-left:1px solid var(--line);background:#f8f9fb;display:flex;flex-direction:column}
   aside.ans h2{font-size:14px;margin:0;padding:12px 14px;border-bottom:1px solid var(--line);background:#fff}
@@ -131,7 +128,6 @@
   .note{font-size:.88em;margin:-.6em 0 .8em 1.8em !important;text-indent:0 !important}
   p.setsumon{margin-top:1.2em;padding-left:3em;text-indent:-3em !important}
   .setsumon b{display:inline-block;width:3em;text-indent:0}
-  mark.hl{background:var(--mark);color:inherit;padding:0}
 
   /* ---------- 解説 ---------- */
   .expl{max-width:880px;line-height:1.85}
@@ -230,7 +226,6 @@
       <ol class="notes">
         <li>画面右の「解答」欄で選択肢をクリックすると解答できます。選び直すこともできます。</li>
         <li>後で見直したい問題には「付箋」を付けられます。左の問題一覧で付箋の付いた問題が分かります。</li>
-        <li>「マーカー」をオンにして問題文をドラッグすると，黄色の線を引けます。「消しゴム」をオンにしてマーカーをクリックすると消えます。</li>
         <li>時間になると自動的に解答終了となり，採点結果が表示されます。</li>
         <li>採点後は，全問の正解と詳細な解説を確認できます。</li>
       </ol>
@@ -272,10 +267,6 @@
       <div class="qtools">
         <span class="pos" id="pos"></span>
         <button class="tool" id="flagBtn"><span class="flagicon"></span><span>付箋</span></button>
-        <button class="tool" id="markBtn"><span class="swatch"></span>マーカー</button>
-        <button class="tool" id="eraseBtn">消しゴム</button>
-        <button class="tool" id="clearMarksBtn">この問題のマーカーを全て消す</button>
-        <span class="hint" id="modeHint"></span>
       </div>
       <div class="qscroll" id="qscroll"></div>
     </section>
@@ -443,7 +434,7 @@ function explHtml(q){
 /* =====================================================================
    状態
    ===================================================================== */
-const S = { set:null, Q:[], cur:0, ans:[], flag:[], mode:'none', remain:0, limit:0, timerId:null,
+const S = { set:null, Q:[], cur:0, ans:[], flag:[], remain:0, limit:0, timerId:null,
             review:false, finished:false, fs:'m', divs:[], filter:'all', startedAt:0 };
 const qscroll = $('qscroll');
 
@@ -522,7 +513,6 @@ function startExam(){
   S.cur=0; S.ans=Array(N).fill(null); S.flag=Array(N).fill(false);
   S.review=false; S.finished=false; S.startedAt=Date.now();
   buildQuestions();
-  if(S.mode!=='none') setMode(S.mode);
   $('hdrTitle').textContent = '科目B演習　' + set.title;
   $('timer').classList.remove('warn','hidden');
   $('timer').textContent = S.limit ? '残り時間 '+fmt(S.limit) : '経過時間 00:00';
@@ -602,40 +592,6 @@ function tick(){
   }
 }
 
-/* ---------- マーカー ---------- */
-function setMode(m){
-  S.mode = (S.mode===m) ? 'none' : m;
-  $('markBtn').classList.toggle('on', S.mode==='marker');
-  $('eraseBtn').classList.toggle('on', S.mode==='erase');
-  qscroll.classList.toggle('m-erase', S.mode==='erase');
-  $('modeHint').textContent = S.mode==='marker' ? '問題文をドラッグしてマーカーを引けます'
-                           : S.mode==='erase' ? '消したいマーカーをクリックしてください' : '';
-}
-function applyMarker(){
-  const sel = window.getSelection();
-  if(!sel.rangeCount || sel.isCollapsed) return;
-  const range = sel.getRangeAt(0);
-  const d = S.divs[S.cur]; if(!d) return;
-  if(!d.wrap.contains(range.commonAncestorContainer)){ sel.removeAllRanges(); return; }
-  let base = range.commonAncestorContainer; if(base.nodeType===3) base = base.parentNode;
-  const walker = document.createTreeWalker(base, NodeFilter.SHOW_TEXT, { acceptNode(n){
-    if(!range.intersectsNode(n) || !n.nodeValue.trim() || n.parentNode.closest('mark.hl')) return NodeFilter.FILTER_REJECT;
-    return NodeFilter.FILTER_ACCEPT; } });
-  const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
-  nodes.forEach(n=>{
-    const start = (n===range.startContainer)?range.startOffset:0;
-    const end = (n===range.endContainer)?range.endOffset:n.length;
-    if(start>=end) return;
-    let t = n; if(end<t.length) t.splitText(end); if(start>0) t = t.splitText(start);
-    const m = document.createElement('mark'); m.className='hl'; t.parentNode.insertBefore(m,t); m.appendChild(t);
-  });
-  sel.removeAllRanges();
-}
-function unwrap(m){ const p=m.parentNode; while(m.firstChild) p.insertBefore(m.firstChild,m); p.removeChild(m); p.normalize(); }
-qscroll.addEventListener('mouseup', ()=>{ if(S.mode==='marker') setTimeout(applyMarker,0); });
-qscroll.addEventListener('touchend', ()=>{ if(S.mode==='marker') setTimeout(applyMarker,0); });
-qscroll.addEventListener('click', e=>{ if(S.mode!=='erase') return; const m=e.target.closest('mark.hl'); if(m) unwrap(m); });
-
 /* ---------- モーダル ---------- */
 function modal(title, body, actions){
   $('mTitle').textContent=title; $('mBody').innerHTML=body;
@@ -696,7 +652,6 @@ function renderExList(){
 }
 function review(i){
   S.review = true;
-  if(S.mode!=='none') setMode(S.mode);
   $('hdrTitle').textContent = '科目B演習　' + S.set.title + '（解説）';
   $('timer').classList.add('hidden');
   ['finishBtn','quitBtn'].forEach(x=>$(x).classList.add('hidden'));
@@ -720,9 +675,6 @@ document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
 $('prevBtn').onclick = ()=>go(S.cur-1);
 $('nextBtn').onclick = ()=>go(S.cur+1);
 $('flagBtn').onclick = ()=>{ S.flag[S.cur]=!S.flag[S.cur]; renderQuestion(); renderList(); };
-$('markBtn').onclick = ()=>setMode('marker');
-$('eraseBtn').onclick = ()=>setMode('erase');
-$('clearMarksBtn').onclick = ()=>S.divs[S.cur].content.querySelectorAll('mark.hl').forEach(unwrap);
 $('clearAnsBtn').onclick = ()=>{ S.ans[S.cur]=null; renderQuestion(); renderList(); };
 document.querySelectorAll('.fsz button').forEach(b=>b.onclick=()=>{
   S.fs=b.dataset.fs; document.querySelectorAll('.fsz button').forEach(x=>x.classList.toggle('on',x===b));
