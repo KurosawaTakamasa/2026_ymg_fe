@@ -10,6 +10,7 @@ window.SET_FILES = [
   'mini-03.js',
   'mini-04.js',
   'mini-05.js',
+  'mini-06.js',
   'full-01.js',
   'full-02.js',
   'full-03.js',
